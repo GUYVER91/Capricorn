@@ -279,4 +279,8 @@ config FILE_TABLE_DEBUG
 	help
 	  This option enables debug of the open files using a global filetable
 
+config ASYNC_FSYNC
+	bool "asynchronous fsync"
+	default y
+
 endmenu
