@@ -17,6 +17,7 @@
 #include <linux/prefetch.h>
 #include <linux/buffer_head.h> /* for inode_has_buffers */
 #include <linux/ratelimit.h>
+#include <trace/events/writeback.h>
 #include <linux/list_lru.h>
 #include "internal.h"
 
