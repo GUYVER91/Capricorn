@@ -40,6 +40,10 @@
 #define XO_CLK_RATE	19200000
 #define CMDLINE_DSI_CTL_NUM_STRING_LEN 2
 
+#ifdef CONFIG_STATE_NOTIFIER
+#include <linux/state_notifier.h>
+#endif
+
 /* Master structure to hold all the information about the DSI/panel */
 static struct mdss_dsi_data *mdss_dsi_res;
 
@@ -2534,6 +2538,9 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
 		if (ctrl_pdata->on_cmds.link_state == DSI_HS_MODE)
 			rc = mdss_dsi_unblank(pdata);
 		pdata->panel_info.esd_rdy = true;
+#ifdef CONFIG_STATE_NOTIFIER
+		state_resume();
+#endif
 		lcd_notifier_call_chain(LCD_EVENT_ON_END, NULL);
 		break;
 	case MDSS_EVENT_BLANK:
@@ -2549,6 +2556,9 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
 			rc = mdss_dsi_blank(pdata, power_state);
 		mutex_lock(&ctrl_pdata->dsi_ctrl_mutex);
 		rc = mdss_dsi_off(pdata, power_state);
+#ifdef CONFIG_STATE_NOTIFIER
+		state_suspend();
+#endif
 		lcd_notifier_call_chain(LCD_EVENT_OFF_END, NULL);
 		mutex_unlock(&ctrl_pdata->dsi_ctrl_mutex);
 		break;
