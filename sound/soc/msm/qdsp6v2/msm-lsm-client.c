@@ -1451,7 +1451,7 @@ static int msm_lsm_ioctl(struct snd_pcm_substream *substream,
 			dev_err(rtd->dev,
 				"%s REG_SND_MODEL failed err %d\n",
 				__func__, err);
-		return err;
+		goto done;
 		}
 		break;
 	case SNDRV_LSM_SET_PARAMS: {
