@@ -295,10 +295,13 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 	  else if [ -x /bin/bash ]; then echo /bin/bash; \
 	  else echo sh; fi ; fi)
 
+# Graphite optimisations
+GRAPHITE	= -fgraphite-identity -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -floop-flatten
+
 HOSTCC       = $(CCACHE) gcc
 HOSTCXX      = $(CCACHE) g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 -fomit-frame-pointer -std=gnu89
-HOSTCXXFLAGS = -O3
+HOSTCFLAGS   = $(GRAPHITE) -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 -fomit-frame-pointer -fmodulo-sched -fmodulo-sched-allow-regmoves -fgcse-las -fgraphite -floop-flatten -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -pipe -std=gnu89
+HOSTCXXFLAGS = -O3 -fmodulo-sched -fmodulo-sched-allow-regmoves -fgcse-las -fgraphite -floop-flatten -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -pipe
 
 ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
 HOSTCFLAGS  += -Wno-unused-value -Wno-unused-parameter \
@@ -354,11 +357,7 @@ include $(srctree)/scripts/Kbuild.include
 # Make variables (CC, etc...)
 AS		= $(CROSS_COMPILE)as
 LD		= $(CROSS_COMPILE)ld
-LD		+= -O3 --strip-debug
-CC		= $(CCACHE) $(CROSS_COMPILE)gcc
-CC		+= -O3 -mcpu=cortex-a57.cortex-a53+crypto
-CC		+= -fmodulo-sched -fmodulo-sched-allow-regmoves
-CC		+= -ftree-loop-distribution
+CC		= $(CCACHE) $(CROSS_COMPILE)gcc -O3
 CPP		= $(CC) -E
 AR		= $(CROSS_COMPILE)ar
 NM		= $(CROSS_COMPILE)nm
@@ -382,6 +381,14 @@ CFLAGS_KERNEL	=
 AFLAGS_KERNEL	=
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
+ARM_ARCH_OPT_MAIN := -mcpu=cortex-a72.cortex-a53+crypto
+GEN_OPT_FLAGS_MAIN := $(call cc-option,$(ARM_ARCH_OPT_MAIN),-march=armv8-a+crypto) \
+ -g0 \
+ -DNDEBUG \
+ -fomit-frame-pointer \
+ -fmodulo-sched \
+ -fmodulo-sched-allow-regmoves \
+ -fivopts
 
 # Use USERINCLUDE when you must reference the UAPI directories only.
 USERINCLUDE    := \
@@ -402,17 +409,26 @@ LINUXINCLUDE    := \
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
-KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -Wno-incompatible-pointer-types \
+KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
-		   -std=gnu89
+		   -fno-delete-null-pointer-checks \
+		   -Wno-maybe-uninitialized \
+		   -std=gnu89 \
+		   -fmodulo-sched -fmodulo-sched-allow-regmoves \
+		   $(GEN_OPT_FLAGS_MAIN)
 
-KBUILD_AFLAGS_KERNEL :=
-KBUILD_CFLAGS_KERNEL :=
+# Thanks gcc!
+KBUILD_CFLAGS   += -Wno-unused-variable -Wno-array-bounds -Wno-tautological-compare \
+		   -Wno-bool-compare -Wno-memset-transposed-args -Wno-misleading-indentation \
+		   -Wno-incompatible-pointer-types -Wno-return-local-addr
+
+KBUILD_AFLAGS_KERNEL := $(GEN_OPT_FLAGS_MAIN)
+KBUILD_CFLAGS_KERNEL := $(GEN_OPT_FLAGS_MAIN)
 KBUILD_AFLAGS   := -D__ASSEMBLY__
-KBUILD_AFLAGS_MODULE  := -DMODULE
-KBUILD_CFLAGS_MODULE  := -DMODULE
+KBUILD_AFLAGS_MODULE  := -DMODULE $(GEN_OPT_FLAGS_MAIN)
+KBUILD_CFLAGS_MODULE  := -DMODULE $(GEN_OPT_FLAGS_MAIN)
 KBUILD_LDFLAGS_MODULE := -T $(srctree)/scripts/module-common.lds
 
 # Read KERNELRELEASE from include/config/kernel.release (if it exists)
