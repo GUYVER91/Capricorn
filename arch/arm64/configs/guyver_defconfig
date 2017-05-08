@@ -3362,6 +3362,12 @@ CONFIG_USB_G_ANDROID=y
 # CONFIG_USB_G_HID is not set
 # CONFIG_USB_G_DBGP is not set
 # CONFIG_USB_G_WEBCAM is not set
+
+#
+# USB Power Delivery and Type-C drivers
+#
+# CONFIG_TYPEC_TCPM is not set
+# CONFIG_TYPEC_FUSB302 is not set
 # CONFIG_USB_LED_TRIG is not set
 # CONFIG_UWB is not set
 CONFIG_MMC=y
