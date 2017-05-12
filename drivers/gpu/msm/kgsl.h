@@ -26,6 +26,7 @@
 #include <linux/mm.h>
 #include <linux/dma-attrs.h>
 #include <linux/uaccess.h>
+#include <linux/kthread.h>
 #include <asm/cacheflush.h>
 #include <linux/kthread.h>
 
@@ -133,7 +134,6 @@ struct kgsl_driver {
 	unsigned int full_cache_threshold;
 	struct workqueue_struct *workqueue;
 	struct workqueue_struct *mem_workqueue;
-
 	struct kthread_worker worker;
 	struct task_struct *worker_thread;
 };
