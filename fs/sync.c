@@ -16,19 +16,13 @@
 #include <linux/pagemap.h>
 #include <linux/quotaops.h>
 #include <linux/backing-dev.h>
-#include <linux/fsync.h>
 #include "internal.h"
 #ifdef CONFIG_ASYNC_FSYNC
 #include <linux/statfs.h>
 #endif
 
 bool fsync_enabled = true;
-module_param(fsync_enabled, bool, 0644);
-
-void set_fsync(bool enable)
-{
-        fsync_enabled = enable;
-}
+module_param(fsync_enabled, bool, 0755);
 
 #ifdef CONFIG_DYNAMIC_FSYNC
 #include <linux/dyn_sync_cntrl.h>
@@ -253,7 +247,7 @@ int vfs_fsync(struct file *file, int datasync)
 {
 	if (!fsync_enabled)
 		return 0;
-
+		
 	return vfs_fsync_range(file, 0, LLONG_MAX, datasync);
 }
 EXPORT_SYMBOL(vfs_fsync);
