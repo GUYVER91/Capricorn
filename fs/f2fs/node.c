@@ -2755,9 +2755,9 @@ void destroy_node_manager(struct f2fs_sb_info *sbi)
 	}
 	up_write(&nm_i->nat_tree_lock);
 
-	f2fs_kvfree(nm_i->nat_block_bitmap);
-	f2fs_kvfree(nm_i->free_nid_bitmap);
-	f2fs_kvfree(nm_i->free_nid_count);
+	kvfree(nm_i->nat_block_bitmap);
+	kvfree(nm_i->free_nid_bitmap);
+	kvfree(nm_i->free_nid_count);
 
 	kfree(nm_i->nat_bitmap);
 	kfree(nm_i->nat_bits);
