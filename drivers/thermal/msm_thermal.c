@@ -977,7 +977,6 @@ module_param_named(core_limit_temp_degC, msm_thermal_info.core_limit_temp_degC,
 			int, 0664);
 module_param_named(core_control_mask, msm_thermal_info.core_control_mask,
 			uint, 0664);
-module_param_named(hotplug_enabled, hotplug_enabled, bool, 0664);
 
 /* extended module parameters */
 module_param_named(temp_hysteresis_degC, msm_thermal_info.temp_hysteresis_degC,
