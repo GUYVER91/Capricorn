@@ -974,8 +974,9 @@ error_lock:
 error:
 	if (data_len > epfile->buf_len || io_data->aio)
 		kfree(data);
-	if (ret < 0)
-		pr_err_ratelimited("Error: returning %zd value\n", ret);
+	if (ret < 0 && ret != -ERESTARTSYS)
+		pr_err_ratelimited("%s(): Error: returning %zd value\n",
+							__func__, ret);
 	return ret;
 }
 
