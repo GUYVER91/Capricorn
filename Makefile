@@ -420,7 +420,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   $(GEN_OPT_FLAGS_MAIN)
 
 # Thanks gcc!
-KBUILD_CFLAGS   += -Wno-unused-variable -Wno-array-bounds -Wno-tautological-compare \
+KBUILD_CFLAGS   += -Wno-unused-variable -Wno-unused-function -Wno-array-bounds -Wno-tautological-compare \
 		   -Wno-bool-compare -Wno-memset-transposed-args -Wno-misleading-indentation \
 		   -Wno-incompatible-pointer-types -Wno-return-local-addr
 
