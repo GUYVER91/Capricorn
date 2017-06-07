@@ -183,8 +183,6 @@ int vote(struct votable *votable, int client_id, bool state, int val)
 						effective_result, client_id,
 						state, client_id);
 		}
-		// fall through
-	default:
 		goto out;
 	}
 
