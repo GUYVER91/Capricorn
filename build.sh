@@ -14,9 +14,9 @@ KERNEL_DIR=$PWD
 DTBTOOL=$KERNEL_DIR/dtbTool
 cd $KERNEL_DIR
 export ARCH=arm64
-export CROSS_COMPILE="/home/guyver/Desktop/Toolchain/Linaro-v7.1/bin/aarch64-linaro-linux-gnueabi-"
+export CROSS_COMPILE="/home/guyver/Desktop/Toolchain/Linaro-v7.1/bin/aarch64-linaro-linux-gnu-"
 export LD_LIBRARY_PATH=home/guyver/Desktop/Toolchain/Linaro-v7.1/lib/
-STRIP="/home/guyver/Desktop/Toolchain/Linaro-v7.1/bin/aarch64-linaro-linux-gnueabi-strip"
+STRIP="/home/guyver/Desktop/Toolchain/Linaro-v7.1/bin/aarch64-linaro-linux-gnu-strip"
 make clean
 make guyver_defconfig
 export KBUILD_BUILD_HOST="Ubuntu"
