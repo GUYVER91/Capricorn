@@ -30,11 +30,15 @@
 #include <linux/workqueue.h>
 #include <linux/kthread.h>
 #include <linux/slab.h>
-#include <linux/display_state.h>
+#ifdef CONFIG_STATE_NOTIFIER
+#include <linux/state_notifier.h>
+#else
+extern bool display_on;
+#endif
 
 /* cultivation version */
 #define CULTIVATION_VERSION_MAJOR	(1)
-#define CULTIVATION_VERSION_MINOR	(5)
+#define CULTIVATION_VERSION_MINOR	(6)
 
 struct cpufreq_cultivation_cpuinfo {
 	struct timer_list cpu_timer;
@@ -400,7 +404,6 @@ static void cpufreq_cultivation_timer(unsigned long data)
 	unsigned long flags;
 	u64 max_fvtime;
 	struct cpufreq_govinfo int_info;
-	bool display_on = is_display_on();
 	unsigned int this_hispeed_freq;
 
 	if (!down_read_trylock(&pcpu->enable_sem))
@@ -429,10 +432,17 @@ static void cpufreq_cultivation_timer(unsigned long data)
 	atomic_notifier_call_chain(&cpufreq_govinfo_notifier_list,
 					CPUFREQ_LOAD_CHANGE, &int_info);
 
+#ifdef CONFIG_STATE_NOTIFIER
+	if (!state_suspended &&
+		tunables->timer_rate != tunables->prev_timer_rate)
+		tunables->timer_rate = tunables->prev_timer_rate;
+	else if (state_suspended &&
+#else
 	if (display_on &&
 		tunables->timer_rate != tunables->prev_timer_rate)
 		tunables->timer_rate = tunables->prev_timer_rate;
 	else if (!display_on &&
+#endif
 		tunables->timer_rate != tunables->timer_rate_screenoff) {
 		tunables->prev_timer_rate = tunables->timer_rate;
 		tunables->timer_rate
@@ -578,7 +588,6 @@ static int cpufreq_cultivation_speedchange_task(void *data)
 	unsigned long flags;
 	struct cpufreq_cultivation_cpuinfo *pcpu;
 	struct cpufreq_cultivation_tunables *tunables;
-	bool display_on = is_display_on();
 
 	while (1) {
 		set_current_state(TASK_INTERRUPTIBLE);
@@ -627,7 +636,11 @@ static int cpufreq_cultivation_speedchange_task(void *data)
 
 			if (max_freq != pcpu->policy->cur) {
 				tunables = pcpu->policy->governor_data;
+#ifdef CONFIG_STATE_NOTIFIER
+				if (tunables->powersave_bias || state_suspended)
+#else
 				if (tunables->powersave_bias || !display_on)
+#endif
 					__cpufreq_driver_target(pcpu->policy,
 								max_freq,
 								CPUFREQ_RELATION_C);
@@ -1500,6 +1513,9 @@ static int __init cpufreq_cultivation_init(void)
 	struct cpufreq_cultivation_cpuinfo *pcpu;
 	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
 
+#ifndef CONFIG_STATE_NOTIFIER
+	display_on = true
+#endif
 	/* Initalize per-cpu timers */
 	for_each_possible_cpu(i) {
 		pcpu = &per_cpu(cpuinfo, i);
