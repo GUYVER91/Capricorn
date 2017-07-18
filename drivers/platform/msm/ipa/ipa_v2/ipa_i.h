@@ -51,6 +51,8 @@
 
 #define IPA_MAX_STATUS_STAT_NUM 30
 
+#define IPA_TIMEOUT(value) (msecs_to_jiffies(value * 1000))
+
 #define IPADBG(fmt, args...) \
 	pr_debug(DRV_NAME " %s:%d " fmt, __func__, __LINE__, ## args)
 #define IPAERR(fmt, args...) \
