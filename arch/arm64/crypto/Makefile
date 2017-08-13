@@ -8,6 +8,12 @@
 # published by the Free Software Foundation.
 #
 
+ARM_ARCH_OPT1 := -mcpu=cortex-a72+crypto -mtune=cortex-a72
+GEN_OPT_FLAGS1 := $(call cc-option,$(ARM_ARCH_OPT1),-march=armv8-a+crc+crypto)
+
+ARM_ARCH_OPT2 := -mcpu=cortex-a72+crc -mtune=cortex-a72
+GEN_OPT_FLAGS2 := $(call cc-option,$(ARM_ARCH_OPT2),-march=armv8-a+crc+crypto)
+
 obj-$(CONFIG_CRYPTO_SHA1_ARM64_CE) += sha1-ce.o
 sha1-ce-y := sha1-ce-glue.o sha1-ce-core.o
 
@@ -24,7 +30,7 @@ obj-$(CONFIG_CRYPTO_CRC32_ARM64_CE) += crc32-ce.o
 crc32-ce-y:= crc32-ce-core.o crc32-ce-glue.o
 
 obj-$(CONFIG_CRYPTO_AES_ARM64_CE) += aes-ce-cipher.o
-CFLAGS_aes-ce-cipher.o += -march=armv8-a+crypto
+CFLAGS_aes-ce-cipher.o += $(GEN_OPT_FLAGS1)
 
 obj-$(CONFIG_CRYPTO_AES_ARM64_CE_CCM) += aes-ce-ccm.o
 aes-ce-ccm-y := aes-ce-ccm-glue.o aes-ce-ccm-core.o
@@ -43,7 +49,7 @@ AFLAGS_aes-neon.o	:= -DINTERLEAVE=4
 
 CFLAGS_aes-glue-ce.o	:= -DUSE_V8_CRYPTO_EXTENSIONS
 
-CFLAGS_crc32-arm64.o	:= -mcpu=generic+crc
+CFLAGS_crc32-arm64.o	:= -mcpu=cortex-a72+crc
 
 $(obj)/aes-glue-%.o: $(src)/aes-glue.c FORCE
 	$(call if_changed_rule,cc_o_c)
