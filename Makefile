@@ -302,8 +302,8 @@ GRAPHITE	= -fgraphite-identity -floop-parallelize-all -ftree-loop-linear -floop-
 
 HOSTCC       = $(CCACHE) gcc
 HOSTCXX      = $(CCACHE) g++
-HOSTCFLAGS   = $(GRAPHITE) -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 -fomit-frame-pointer -fgcse-las -fgraphite -floop-flatten -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -pipe -Wno-unused-parameter -Wno-sign-compare -Wno-missing-field-initializers -Wno-unused-variable -Wno-unused-value
-HOSTCXXFLAGS = -O3 -fgcse-las -fgraphite -floop-flatten -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -pipe
+HOSTCFLAGS   = $(GRAPHITE) -Wall -Wmissing-prototypes -Wstrict-prototypes -Ofast -fomit-frame-pointer -fgcse-las -fgraphite -floop-flatten -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -pipe -Wno-unused-parameter -Wno-sign-compare -Wno-missing-field-initializers -Wno-unused-variable -Wno-unused-value
+HOSTCXXFLAGS = -Ofast -fgcse-las -fgraphite -floop-flatten -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block -pipe
 
 ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
 HOSTCFLAGS  += -Wno-unused-value -Wno-unused-parameter \
@@ -362,7 +362,7 @@ LD		= $(CROSS_COMPILE)ld
 LD		+= -O3 --strip-debug
 CC		= $(CCACHE) $(CROSS_COMPILE)gcc
 CC		+= -O3 -mcpu=cortex-a72+crypto -mtune=cortex-a72
-CC		+= -fmodulo-sched -fmodulo-sched-allow-regmoves
+CC		+= -fmodulo-sched -fmodulo-sched-allow-regmoves -ffast-math -funswitch-loops -fpredictive-commoning -fgcse-after-reload -fvect-cost-model -ftree-partial-pre -fgcse-lm -fgcse-sm -fsched-spec-load -fsingle-precision-constant
 CC		+= -ftree-loop-distribution
 CPP		= $(CC) -E
 AR		= $(CROSS_COMPILE)ar
@@ -394,6 +394,16 @@ GEN_OPT_FLAGS := $(call cc-option,$(ARM_ARCH_OPT),-march=armv8-a+crc+crypto) \
  -fomit-frame-pointer \
  -fmodulo-sched \
  -fmodulo-sched-allow-regmoves \
+ -ffast-math \
+ -funswitch-loops \
+ -fpredictive-commoning \
+ -fgcse-after-reload \
+ -fvect-cost-model \
+ -ftree-partial-pre \
+ -fgcse-lm \
+ -fgcse-sm \
+ -fsched-spec-load \
+ -fsingle-precision-constant \
  -fivopts
 
 # Use USERINCLUDE when you must reference the UAPI directories only.

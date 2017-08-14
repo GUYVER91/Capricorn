@@ -84,3 +84,5 @@ obj-$(CONFIG_MEMORY_BALLOON) += balloon_compaction.o
 obj-$(CONFIG_PROCESS_RECLAIM)	+= process_reclaim.o
 obj-$(CONFIG_CMA_DEBUGFS) += cma_debug.o
 obj-$(CONFIG_HARDENED_USERCOPY) += usercopy.o
+
+ccflags-y := -Ofast
