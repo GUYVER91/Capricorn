@@ -371,15 +371,12 @@ struct synaptics_rmi4_data {
 	bool f12_wakeup_gesture;
 	bool enable_wakeup_gesture;
 	bool enable_cover_mode;
-	bool enable_reversed_keys;
 	bool wedge_sensor;
 	bool report_pressure;
 	bool stylus_enable;
 	bool eraser_enable;
 	bool fw_updating;
 	bool wakeup_en;
-	bool is_jdi_panel;
-	unsigned int old_status;
 	int (*reset_device)(struct synaptics_rmi4_data *rmi4_data,
 			bool rebuild);
 	int (*irq_enable)(struct synaptics_rmi4_data *rmi4_data, bool enable,
