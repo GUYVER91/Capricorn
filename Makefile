@@ -405,7 +405,7 @@ KBUILD_CFLAGS   := -Werror -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
 		   -std=gnu89 \
-                   -Wno-tautological-compare -Wno-return-local-addr -Wno-array-bounds \
+                   -Wno-tautological-compare -Wno-return-local-addr -Wno-array-bounds -Wno-incompatible-pointer-types \
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
