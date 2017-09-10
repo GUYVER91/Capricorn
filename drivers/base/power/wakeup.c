@@ -30,6 +30,14 @@ static bool enable_wlan_ws = true;
 module_param(enable_wlan_ws, bool, 0644);
 static bool enable_timerfd_ws = true;
 module_param(enable_timerfd_ws, bool, 0644);
+static bool enable_qbt_wake_source_ws = false;
+module_param(enable_qbt_wake_source_ws, bool, 0644);
+static bool enable_captouch_ttw_wl_ws = false;
+module_param(enable_captouch_ttw_wl_ws, bool, 0644);
+static bool enable_wlan_pno_wl_ws = false;
+module_param(enable_wlan_pno_wl_ws, bool, 0644);
+static bool enable_wlan_wow_wl_ws = false;
+module_param(enable_wlan_wow_wl_ws, bool, 0644);
 static bool enable_netlink_ws = true;
 module_param(enable_netlink_ws, bool, 0644);
 
@@ -478,6 +486,14 @@ static bool wakeup_source_blocker(struct wakeup_source *ws)
 				!strncmp(ws->name, "wlan", wslen)) ||
 			(!enable_timerfd_ws &&
 				!strncmp(ws->name, "[timerfd]", wslen)) ||
+			(!enable_qbt_wake_source_ws &&
+				!strncmp(ws->name, "qbt_wake_source", wslen)) ||
+			(!enable_captouch_ttw_wl_ws &&
+				!strncmp(ws->name, "captouch_ttw_wl", wslen)) ||
+			(!enable_wlan_pno_wl_ws &&
+				!strncmp(ws->name, "wlan_pno_wl", wslen)) ||
+			(!enable_wlan_wow_wl_ws &&
+                 	        !strncmp(ws->name, "wlan_wow_wl", wslen)) ||
 			(!enable_netlink_ws &&
 				!strncmp(ws->name, "NETLINK", wslen))) {
 			if (ws->active) {
