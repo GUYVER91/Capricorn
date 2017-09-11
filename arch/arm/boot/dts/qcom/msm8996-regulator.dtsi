@@ -1729,7 +1729,7 @@
 			gfx_vreg: regulator {
 				regulator-name = "gfx_corner";
 				regulator-min-microvolt = <2>;
-				regulator-max-microvolt = <8>;
+				regulator-max-microvolt = <10>;
 
 				qcom,cpr-fuse-corners = <4>;
 				qcom,cpr-fuse-combos = <8>;
@@ -1739,7 +1739,7 @@
 
 				qcom,cpr-voltage-ceiling =
 					<400000  670000  670000  745000  825000
-					 905000  960000 1015000>;
+					 905000  960000 1065000>;
 				qcom,cpr-voltage-floor =
 					<400000  520000  520000  520000  520000
 					 520000  520000  520000>;
@@ -1749,7 +1749,7 @@
 				qcom,corner-frequencies =
 					<0 133000000 214000000 315000000
 					 401800000 510000000 560000000
-					 624000000>;
+					 680000000>;
 
 				qcom,cpr-target-quotients =
 				      <   0    0    0    0    0    0    0    0
@@ -1766,8 +1766,8 @@
 					798  768  823  810    0    0    0    0>,
 				      <   0    0    0    0    0    0  669  629
 					886  864  924  911    0    0    0    0>,
-				      <   0    0    0    0    0    0  771  725
-					984  970 1036 1024    0    0    0    0>;
+				      <   0    0    0    0    0    0  908  868
+					1118  1106 1179 1174    0    0    0    0>;
 
 				qcom,cpr-ro-scaling-factor =
 				      <   0    0    0    0    0    0 2035 1917
