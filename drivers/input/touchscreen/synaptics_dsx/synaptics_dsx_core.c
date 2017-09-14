@@ -20,7 +20,6 @@
 
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/proc_fs.h>
 #include <linux/slab.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
@@ -148,7 +147,9 @@ static ssize_t synaptics_secure_touch_show(struct device *dev,
 #endif
 
 #ifdef CONFIG_FB
-static int synaptics_rmi4_fb_notifier_cb(struct notifier_block *self,
+static int synaptics_rmi4_fb_notifier_cb_jdi(struct notifier_block *self,
+		unsigned long event, void *data);
+static int synaptics_rmi4_fb_notifier_cb_lgd(struct notifier_block *self,
 		unsigned long event, void *data);
 #endif
 
@@ -1087,51 +1088,6 @@ static ssize_t synaptics_rmi4_virtual_key_map_show(struct kobject *kobj,
 	}
 
 	return count;
-}
-
-static int synaptics_rmi4_proc_init(struct kernfs_node *sysfs_node_parent)
-{
-	int ret = 0;
-	char *buf, *path = NULL;
-	char *double_tap_sysfs_node, *key_disabler_sysfs_node;
-	struct proc_dir_entry *proc_entry_tp = NULL;
-	struct proc_dir_entry *proc_symlink_tmp  = NULL;
-
-	buf = kzalloc(PATH_MAX, GFP_KERNEL);
-	if (buf)
-		path = kernfs_path(sysfs_node_parent, buf, PATH_MAX);
-
-	proc_entry_tp = proc_mkdir("touchpanel", NULL);
-	if (proc_entry_tp == NULL) {
-		ret = -ENOMEM;
-		pr_err("%s: Couldn't create touchpanel\n", __func__);
-	}
-
-	double_tap_sysfs_node = kzalloc(PATH_MAX, GFP_KERNEL);
-	if (double_tap_sysfs_node)
-		sprintf(double_tap_sysfs_node, "/sys%s/%s", path, "wake_gesture");
-	proc_symlink_tmp = proc_symlink("double_tap_enable",
-			proc_entry_tp, double_tap_sysfs_node);
-	if (proc_symlink_tmp == NULL) {
-		ret = -ENOMEM;
-		pr_err("%s: Couldn't create double_tap_enable symlink\n", __func__);
-	}
-
-	key_disabler_sysfs_node = kzalloc(PATH_MAX, GFP_KERNEL);
-	if (key_disabler_sysfs_node)
-		sprintf(key_disabler_sysfs_node, "/sys%s/%s", path, "0dbutton");
-	proc_symlink_tmp = proc_symlink("capacitive_keys_enable",
-			proc_entry_tp, key_disabler_sysfs_node);
-	if (proc_symlink_tmp == NULL) {
-		ret = -ENOMEM;
-		pr_err("%s: Couldn't create capacitive_keys_enable symlink\n", __func__);
-	}
-
-	kfree(buf);
-	kfree(double_tap_sysfs_node);
-	kfree(key_disabler_sysfs_node);
-
-	return ret;
 }
 
 static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
@@ -4654,10 +4610,12 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 	}
 
 	synaptics_rmi4_query_chip_id(rmi4_data);
-	rmi4_data->is_jdi_panel = rmi4_data->chip_id == CHIP_ID_3330;
 
 #ifdef CONFIG_FB
-	rmi4_data->fb_notifier.notifier_call = synaptics_rmi4_fb_notifier_cb;
+	if (rmi4_data->chip_id == CHIP_ID_3330)
+		rmi4_data->fb_notifier.notifier_call = synaptics_rmi4_fb_notifier_cb_jdi;
+	else
+		rmi4_data->fb_notifier.notifier_call = synaptics_rmi4_fb_notifier_cb_lgd;
 	retval = fb_register_client(&rmi4_data->fb_notifier);
 	if (retval < 0) {
 		dev_err(&pdev->dev,
@@ -4720,7 +4678,6 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 		}
 	}
 
-	synaptics_rmi4_proc_init(rmi4_data->input_dev->dev.kobj.sd);
 
 	retval = sysfs_create_file(&rmi4_data->pdev->dev.parent->kobj, &dev_attr_panel_color.attr);
 
@@ -5105,18 +5062,15 @@ static void synaptics_rmi4_wakeup_gesture(struct synaptics_rmi4_data *rmi4_data,
 #ifdef CONFIG_FB
 extern bool mdss_panel_is_prim(struct fb_info *fbi);
 extern void mdss_panel_reset_skip_enable(bool enable);
-static int synaptics_rmi4_fb_notifier_cb(struct notifier_block *self,
+static int synaptics_rmi4_fb_notifier_cb_jdi(struct notifier_block *self,
 		unsigned long event, void *data)
 {
 	int *transition;
-	int new_status;
 	struct fb_event *evdata = data;
 	struct synaptics_rmi4_data *rmi4_data =
 			container_of(self, struct synaptics_rmi4_data,
 			fb_notifier);
 	const struct synaptics_dsx_board_data *bdata = NULL;
-	bool is_dozing = false;
-	bool is_jdi_panel = rmi4_data->is_jdi_panel;
 
 	if (rmi4_data->hw_if->board_data)
 		bdata = rmi4_data->hw_if->board_data;
@@ -5125,26 +5079,61 @@ static int synaptics_rmi4_fb_notifier_cb(struct notifier_block *self,
 
 	/* Receive notifications from primary panel only */
 	if (evdata && evdata->data && rmi4_data && mdss_panel_is_prim(evdata->info)) {
-		transition = evdata->data;
-		switch (event) {
-		case FB_EVENT_BLANK:
-			switch (*transition) {
-			case FB_BLANK_NORMAL:
-			case FB_BLANK_UNBLANK:
-				new_status = 0;
-				break;
-			default:
-			case FB_BLANK_POWERDOWN:
-				new_status = 1;
-				break;
-			}
-
-			if (new_status) {
-				if (is_jdi_panel) {
-					synaptics_rmi4_suspend(&rmi4_data->pdev->dev);
-					rmi4_data->fb_ready = false;
+		if (event == FB_EVENT_BLANK) {
+			transition = evdata->data;
+			if ((*transition == FB_BLANK_POWERDOWN) || (*transition == FB_BLANK_NORMAL)) {
+				synaptics_rmi4_suspend(&rmi4_data->pdev->dev);
+				rmi4_data->fb_ready = false;
+			} else if ((*transition == FB_BLANK_UNBLANK) || (*transition == FB_BLANK_NORMAL)) {
+				synaptics_rmi4_resume(&rmi4_data->pdev->dev);
+				rmi4_data->fb_ready = true;
+				if (rmi4_data->enable_wakeup_gesture) {
+					mdss_panel_reset_skip_enable(false);
+					mdss_regulator_ctrl(rmi4_data, false);
 				}
-			} else {
+			}
+		} else if (event == FB_EARLY_EVENT_BLANK) {
+			transition = evdata->data;
+			if ((*transition == FB_BLANK_POWERDOWN) || (*transition == FB_BLANK_NORMAL)) {
+				if (rmi4_data->enable_wakeup_gesture) {
+					mdss_regulator_ctrl(rmi4_data, true);
+					mdss_panel_reset_skip_enable(true);
+				}
+			} else if ((*transition == FB_BLANK_UNBLANK) || (*transition == FB_BLANK_NORMAL)) {
+				if (bdata->reset_gpio >= 0 && rmi4_data->suspend) {
+					gpio_set_value(bdata->reset_gpio, bdata->reset_on_state);
+					msleep(bdata->reset_active_ms);
+					gpio_set_value(bdata->reset_gpio, !bdata->reset_on_state);
+				}
+				if (rmi4_data->enable_wakeup_gesture) {
+					if (bdata->mdss_reset != 0) {
+						gpio_set_value(bdata->mdss_reset, !bdata->mdss_reset_state);
+						msleep(10);
+						gpio_set_value(bdata->mdss_reset, bdata->mdss_reset_state);
+						msleep(10);
+					}
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
+static int synaptics_rmi4_fb_notifier_cb_lgd(struct notifier_block *self,
+		unsigned long event, void *data)
+{
+	int *transition;
+	struct fb_event *evdata = data;
+	struct synaptics_rmi4_data *rmi4_data =
+			container_of(self, struct synaptics_rmi4_data,
+			fb_notifier);
+
+	/* Receive notifications from primary panel only */
+	if (evdata && evdata->data && rmi4_data && mdss_panel_is_prim(evdata->info)) {
+		if (event == FB_EVENT_BLANK) {
+			transition = evdata->data;
+			if ((*transition == FB_BLANK_UNBLANK) || (*transition == FB_BLANK_NORMAL)) {
 				synaptics_rmi4_resume(&rmi4_data->pdev->dev);
 				rmi4_data->fb_ready = true;
 				if (rmi4_data->wakeup_en && rmi4_data->enable_wakeup_gesture) {
@@ -5153,60 +5142,26 @@ static int synaptics_rmi4_fb_notifier_cb(struct notifier_block *self,
 					rmi4_data->wakeup_en = false;
 				}
 			}
-			rmi4_data->old_status = new_status;
-			break;
-		case FB_EARLY_EVENT_BLANK:
-			switch (*transition) {
-			case FB_BLANK_NORMAL:
-				is_dozing = true;
-			case FB_BLANK_UNBLANK:
-				new_status = 0;
-				break;
-			default:
-			case FB_BLANK_POWERDOWN:
-				new_status = 1;
-				break;
-			}
-
-			if (new_status == rmi4_data->old_status)
-				break;
-
-			if (is_dozing && is_jdi_panel) {
-				if (bdata->reset_gpio >= 0 && rmi4_data->suspend) {
-					gpio_set_value(bdata->reset_gpio, bdata->reset_on_state);
-					msleep(bdata->reset_active_ms);
-					gpio_set_value(bdata->reset_gpio, !bdata->reset_on_state);
+		} else if (event == FB_EARLY_EVENT_BLANK) {
+			transition = evdata->data;
+			if (*transition == FB_BLANK_UNBLANK) {
+				if (rmi4_data->wakeup_en && rmi4_data->enable_wakeup_gesture) {
+					if (rmi4_data->hw_if->board_data->mdss_reset != 0) {
+						gpio_set_value(rmi4_data->hw_if->board_data->mdss_reset, !rmi4_data->hw_if->board_data->mdss_reset_state);
+						msleep(10);
+						gpio_set_value(rmi4_data->hw_if->board_data->mdss_reset, rmi4_data->hw_if->board_data->mdss_reset_state);
+						msleep(100);
+					}
 				}
-				if (rmi4_data->enable_wakeup_gesture) {
-					mdss_regulator_ctrl(rmi4_data, true);
-					mdss_panel_reset_skip_enable(true);
-				}
-			} else if (new_status) {
+			} else if ((*transition == FB_BLANK_POWERDOWN) || (*transition == FB_BLANK_NORMAL)) {
 				if (rmi4_data->enable_wakeup_gesture) {
 					rmi4_data->wakeup_en = true;
 					mdss_panel_reset_skip_enable(true);
 					mdss_regulator_ctrl(rmi4_data, true);
 				}
-				if (!is_jdi_panel) {
-					synaptics_rmi4_suspend(&rmi4_data->pdev->dev);
-					rmi4_data->fb_ready = false;
-				}
-			} else {
-				if (is_jdi_panel && bdata->reset_gpio >= 0 && rmi4_data->suspend) {
-					gpio_set_value(bdata->reset_gpio, bdata->reset_on_state);
-					msleep(bdata->reset_active_ms);
-					gpio_set_value(bdata->reset_gpio, !bdata->reset_on_state);
-				}
-				if (rmi4_data->wakeup_en && rmi4_data->enable_wakeup_gesture &&
-						bdata->mdss_reset != 0) {
-					gpio_set_value(bdata->mdss_reset, !bdata->mdss_reset_state);
-					msleep(10);
-					gpio_set_value(bdata->mdss_reset, bdata->mdss_reset_state);
-					is_jdi_panel ? msleep(10) : msleep(100);
-				}
+				synaptics_rmi4_suspend(&rmi4_data->pdev->dev);
+				rmi4_data->fb_ready = false;
 			}
-			rmi4_data->old_status = new_status;
-			break;
 		}
 	}
 
