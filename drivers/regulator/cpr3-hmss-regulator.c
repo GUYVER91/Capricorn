@@ -368,7 +368,7 @@ static const int msm8996_v1_v2_hmss_fuse_ref_volt[MSM8996_HMSS_FUSE_CORNERS] = {
 	745000, /* Place holder entry for LowSVS */
 	745000,
 	905000,
-	1015000,
+	1140000,
 };
 
 /* Open loop voltage fuse reference voltages in microvolts for MSM8996 v3 */
@@ -377,7 +377,7 @@ static const int msm8996_v3_hmss_fuse_ref_volt[MSM8996_HMSS_FUSE_CORNERS] = {
 	745000, /* Place holder entry for LowSVS */
 	745000,
 	905000,
-	1250000,
+	1140000,
 };
 
 /*
@@ -390,7 +390,7 @@ static const int msm8996_v3_speed_bin1_rev5_hmss_fuse_ref_volt[
 	745000, /* Place holder entry for LowSVS */
 	745000,
 	905000,
-	1040000,
+	1140000,
 };
 
 /* Defines mapping from retention fuse values to voltages in microvolts */
@@ -715,7 +715,7 @@ static int cpr3_msm8996_hmss_calculate_open_loop_voltages(
 		ref_volt = msm8996_v1_v2_hmss_fuse_ref_volt;
 	else if (soc_revision == 3 && fuse->speed_bin == 1
 				   && fuse->cpr_fusing_rev >= 5)
-		ref_volt = msm8996_v3_hmss_fuse_ref_volt;
+		ref_volt = msm8996_v3_speed_bin1_rev5_hmss_fuse_ref_volt;
 	else
 		ref_volt = msm8996_v3_hmss_fuse_ref_volt;
 
@@ -1505,7 +1505,7 @@ static int cpr3_hmss_init_regulator(struct cpr3_regulator *vreg)
 static int cpr3_hmss_init_aging(struct cpr3_controller *ctrl)
 {
 	struct cpr3_msm8996_hmss_fuses *fuse = NULL;
-	struct cpr3_regulator *vreg;
+	struct cpr3_regulator *vreg = NULL;
 	u32 aging_ro_scale;
 	int i, j, rc;
 
@@ -1522,6 +1522,11 @@ static int cpr3_hmss_init_aging(struct cpr3_controller *ctrl)
 
 	if (!ctrl->aging_required || !fuse)
 		return 0;
+
+	if (!vreg) {
+		cpr3_err(ctrl, "CPR3 regulator not found!\n");
+		return -EINVAL;
+	}
 
 	rc = cpr3_parse_array_property(vreg, "qcom,cpr-aging-ro-scaling-factor",
 					1, &aging_ro_scale);
