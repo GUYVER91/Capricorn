@@ -137,6 +137,7 @@ struct sound_control {
  	int default_headphones_value;
 	int default_speaker_value;
 	int default_mic_value;
+	int default_earpiece_value;
 } soundcontrol;
 
 #define TASHA_MAX_MICBIAS 4
@@ -13112,11 +13113,31 @@ void update_mic_gain(int vol_boost)
 	pr_info("Sound Control: Speaker default value %d\n", default_val);
 
 	snd_soc_write(soundcontrol.snd_control_codec,
+ 		WCD9335_CDC_TX6_TX_VOL_CTL, boosted_val);
+	snd_soc_write(soundcontrol.snd_control_codec,
+		WCD9335_CDC_TX7_TX_VOL_CTL, boosted_val);
+
+ 	pr_info("Sound Control: Boosted Primary Mic TX6 value %d\n",
+ 		snd_soc_read(soundcontrol.snd_control_codec,
+ 		WCD9335_CDC_TX6_TX_VOL_CTL));
+ 	pr_info("Sound Control: Boosted Secondary Mic TX7 value %d\n",
+ 		snd_soc_read(soundcontrol.snd_control_codec,
+		WCD9335_CDC_TX7_TX_VOL_CTL));
+}
+
+void update_earpiece_gain(int vol_boost)
+{
+	int default_val = soundcontrol.default_earpiece_value;
+	int boosted_val = default_val + vol_boost;
+
+	pr_info("Sound Control: Earpiece default value %d\n", default_val);
+
+	snd_soc_write(soundcontrol.snd_control_codec,
  		WCD9335_CDC_RX0_RX_VOL_CTL, boosted_val);
  	snd_soc_write(soundcontrol.snd_control_codec,
  		WCD9335_CDC_RX0_RX_VOL_MIX_CTL, boosted_val);
 
- 	pr_info("Sound Control: Boosted Speaker RX6 value %d\n",
+ 	pr_info("Sound Control: Boosted Earpiece RX0 value %d\n",
  		snd_soc_read(soundcontrol.snd_control_codec,
  		WCD9335_CDC_RX0_RX_VOL_CTL));
 }
@@ -13328,6 +13349,8 @@ static int tasha_codec_probe(struct snd_soc_codec *codec)
  		WCD9335_CDC_RX6_RX_VOL_CTL);
  	soundcontrol.default_mic_value = snd_soc_read(codec,
 		WCD9335_CDC_RX0_RX_VOL_CTL);
+ 	soundcontrol.default_earpiece_value = snd_soc_read(codec,
+ 		WCD9335_CDC_RX0_RX_VOL_CTL);
 
 	return ret;
 
